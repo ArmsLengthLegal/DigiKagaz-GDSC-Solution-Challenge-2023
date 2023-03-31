@@ -1,0 +1,179 @@
+Comment: |
+  Problem in calling preexisting data (if Hindi Required)
+---
+modules:
+  - .digikagaz_db
+  - .final_translate
+---
+code: |
+  if client2_option_id != 'Other':
+    client2 = next(item for item in client_details if str(item["id"]) == str(client2_option_id))
+    
+    if hindi_required and (client2.get('name_hi') is None or client2.get('father_name_hi') is None or client2.get('address_hi') is None):
+      client2_name = client2['name']
+      client2_father_name= client2['father_name']
+      client2_add = client2['address']['address']
+      isCorrect, client2_hindi= trans([client2_name, client2_father_name, client2_add])
+      Hindi_trans_client2_ohk
+      hindi_update_data = {'name_hi': client2_name_hindi, 'father_name_hi': client2_father_name_hindi, 'address_hi': client2_address_hindi}
+      isSucc, msg = update('client_details',hindi_update_data, where=f"id='{client2['id']}'") 
+      client2.update(hindi_update_data) 
+  
+  
+  elif client2_option_id == 'Other':
+    
+    if hindi_required:
+      isCorrect, client2_hindi= trans([client2_name, client2_father_name, client2_add])
+      Hindi_trans_client2_ohk
+      client2 = {'name': client2_name, 'name_hi': client2_name_hindi,'father_name': client2_father_name, 'father_name_hi': client2_father_name_hindi, 'age': client2_age, 'mobile': client2_mob, 'email': client2_email, 'adv_id': adv_id,'address': json.dumps({'address': client2_add}), 'address_hi': client2_address_hindi }
+      
+    
+    else:
+      client2 = {'name': client2_name, 'father_name': client2_father_name, 'age': client2_age, 'mobile': client2_mob, 'email': client2_email, 'adv_id': adv_id,'address': json.dumps({'address': client2_add})}
+    
+    isSucc, client2_id = add('client_details', client2, return_val='id')
+
+  add_new_client2_without_authorized = True
+---
+---
+code: |
+  isSucc, client_details = fetch('client_details', where=f"adv_id='{adv_id}'")
+
+    # Create a list of client options for a dropdown menu based on the input list of client data.
+    # Each option represents a client name along with their father's name in the format "{name} (S/O {father_name})".
+  client_options = []
+  for client in client_details:
+    client_options.append({client['id']: f"{client['name']} (S/O {client['father_name']})"})
+  client_options.append({"Other": "Other"})
+
+  if client_option_id != 'Other':
+    client = next(item for item in client_details if str(item["id"]) == str(client_option_id))
+    
+    if hindi_required and (client.get('name_hi') is None or client.get('father_name_hi') is None or client.get('address_hi') is None):
+      client_name = client['name']
+      client_father_name= client['father_name']
+      client_add = client['address']['address']
+      isCorrect, client_hindi= trans([client_name, client_father_name, client_add])
+      Hindi_trans_client_ohk
+      hindi_update_data = {'name_hi': client_name_hindi, 'father_name_hi': client_father_name_hindi, 'address_hi': client_address_hindi}
+      isSucc, msg = update('client_details',hindi_update_data, where=f"id='{client['id']}'") 
+      client.update(hindi_update_data) 
+  
+  
+  elif client_option_id == 'Other':
+    
+    if hindi_required:
+      isCorrect, client_hindi= trans([client_name, client_father_name, client_add])
+      Hindi_trans_client_ohk
+      client = {'name': client_name, 'name_hi': client_name_hindi,'father_name': client_father_name, 'father_name_hi': client_father_name_hindi, 'age': client_age, 'mobile': client_mob, 'email': client_email, 'adv_id': adv_id,'address': json.dumps({'address': client_add}), 'address_hi': client_address_hindi }
+      
+    
+    else:
+      client = {'name': client_name, 'father_name': client_father_name, 'age': client_age, 'mobile': client_mob, 'email': client_email, 'adv_id': adv_id,'address': json.dumps({'address': client_add})}
+    
+    isSucc, client_id = add('client_details', client, return_val='id')
+
+  add_new_client_without_authorized = True
+---
+question: |
+  कृपया मुकदमे से संबन्धित ${party_1} की जानकारी दर्ज करे ।
+fields:
+  - कृपया ${party_1} चुनिये: client_option_id
+    code: |
+      list(client_options)
+  - ${party_1} का नाम : client_name
+    show if:
+      variable: client_option_id
+      is: Other
+  - ${party_1} के पिता का नाम : client_father_name
+    show if:
+      variable: client_option_id
+      is: Other
+  - ${party_1} की आयु: client_age
+    datatype: integer
+    minlength: 2
+    maxlength: 2
+    show if:
+      variable: client_option_id
+      is: Other
+	- ${party_1} का पता: client_add
+		show if:
+      variable: client_option_id
+      is: Other
+  - ${party_1} का मोबाइल न०::  client_mob
+    minlength: 10
+    maxlength: 10
+		show if:
+      variable: client_option_id
+      is: Other
+  - ${party_1} की ईमेल : client_email
+		show if:
+      variable: client_option_id
+      is: Other
+---
+question: |
+  Check the translation
+subquestion: |
+  If incorrect, kindly correct the same. 
+fields:
+  - ${party_1} का नाम : client_name_hindi
+    default: ${client_hindi[client_name]}
+  - ${party_1} के पिता का नाम : client_father_name_hindi
+    default:  ${client_hindi[client_father_name]}
+  - ${party_1} का पता : client_address_hindi
+    default: ${client_hindi[client_add]}  
+  - Translation Checked: Hindi_trans_client_ohk
+    datatype: yesnoradio
+    default: True
+---
+question: |
+  कृपया मुकदमे से संबन्धित ${party_2} की जानकारी दर्ज करे ।
+fields:
+  - कृपया ${party_2} चुनिये: client2_option_id
+    code: |
+      list(client_options)
+  - ${party_2} का नाम : client2_name
+    show if:
+      variable: client2_option_id
+      is: Other
+  - ${party_2} के पिता का नाम : client2_father_name
+    show if:
+      variable: client2_option_id
+      is: Other
+  - ${party_2} की आयु: client2_age
+    datatype: integer
+    minlength: 2
+    maxlength: 2
+    show if:
+      variable: client2_option_id
+      is: Other
+	- ${party_2} का पता: client2_add
+		show if:
+      variable: client2_option_id
+      is: Other
+  - ${party_2} का मोबाइल न०::  client2_mob
+    minlength: 10
+    maxlength: 10
+		show if:
+      variable: client2_option_id
+      is: Other
+  - ${party_2} की ईमेल : client2_email
+		show if:
+      variable: client2_option_id
+      is: Other
+---
+question: |
+  Check the translation
+subquestion: |
+  If incorrect, kindly correct the same. 
+fields:
+  - ${party_2} का नाम : client2_name_hindi
+    default: ${client2_hindi[client2_name]}
+  - ${party_2} के पिता का नाम : client2_father_name_hindi
+    default:  ${client2_hindi[client2_father_name]}
+  - ${party_2} का पता : client2_address_hindi
+    default: ${client2_hindi[client2_add]}  
+  - Translation Checked: Hindi_trans_client2_ohk
+    datatype: yesnoradio
+    default: True
+--- 

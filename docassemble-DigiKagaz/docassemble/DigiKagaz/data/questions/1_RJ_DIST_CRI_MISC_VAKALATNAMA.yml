@@ -1,0 +1,30 @@
+---
+metadata:
+  title: VAKALATNAMA
+---
+code: |
+  #this is dummy code for the purposes of calling vakalatnama in any given form. 
+  result = web.post('postApi', data={
+    "enrollment_no":url_args['enrollno'],
+    "url":vakalatnama_generated.pdf.url_for(temporary=True, seconds=60),
+    "name": case['updated_title'],
+    "date":today(format='yyyy-MM-dd'),
+    "time":"10:00 AM",
+    "court_code": court_code,
+    "page": 1,  
+    "charges": 2,
+    "option_two":"वकालतनामा", 
+    })
+  # Remove hash to rediect to digikagaz after succesfull POST API response
+  if result['status'] == 200:
+    command('exit', url='https://digikagaz.com')
+  else:
+    error_screen  
+  vakalatnama_required = true
+---
+attachment:
+  name: VAKALATNAMA
+  filename: VAKALATNAMA
+  docx template file: 1_RJ_DIST_CRI_MISC_VAKALATNAMA.docx
+  variable name: vakalatnama_generated
+---    

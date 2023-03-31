@@ -1,0 +1,205 @@
+comment: |
+  we need to map client to the case. 
+  police station waala dekhna hai. 
+---
+comment: |
+  guide to use
+  pre_selected_cnr = 'none' #only in cases which do not have existing data 'Other'
+  default_pet = "STATE"
+  default_res = "State" #can be either
+  hindi_required = True
+  case_type = "BAIL"
+  ---
+  from special screen
+  adv_id = "1677737482"
+  adv_city = "Kota"
+  url_args = {} 
+  url_args['city'] = adv_city
+---
+features:
+  hide navbar: true
+---
+modules:
+  - .digikagaz_db_2
+  - .uuid_withday  
+  - .final_translate
+---
+
+code: |
+  def fetch_adv_cases_civil(adv_id):
+    isSucc, cases = fetch_case_cnr_details(adv_id, columns=['case_details.cnr', 'updated_title', 'reg_no'], where="fir_no = '' OR fir_no = ' ' OR fir_no is NULL")
+    return [{x['case_details.cnr']: f"{x['updated_title']} ({x['reg_no']})"} for x in cases]
+  
+  
+  def fetch_adv_cases_cri(adv_id):
+    isSucc, cases = fetch_case_cnr_details(adv_id, columns=['case_details.cnr', 'updated_title', 'reg_no'], where="NOT (fir_no = '' OR fir_no = 'N/A' OR fir_no = ' ' OR fir_no is NULL)")
+    return [{x['case_details.cnr']: f"{x['updated_title']} ({x['reg_no']})"} for x in cases]
+  
+  
+  def fetch_case_by_cnr(adv_id, cnr):
+    isSucc22, cases = fetch_case_cnr_details(adv_id, cnr=cnr)
+    case = cases[0] if cases else None
+    return case
+    
+  def check_variable_exists(variable_name):
+    return variable_name in locals() or variable_name in globals()    
+---
+code: |
+
+
+  if pre_selected_cnr != 'Other':
+    adv_cases = fetch_adv_cases_cri(adv_id)
+  else:
+    selected_cnr = pre_selected_cnr
+  
+  if selected_cnr != 'Other':
+    case= fetch_case_by_cnr(adv_id, selected_cnr)
+    if ('updated_petitioner' in case and case['updated_petitioner'] not in [None, '', ' ']) and \
+   ('updated_respondent' in case and case['updated_respondent'] not in [None, '', ' ']):
+     final_var = "All keys exist and have valid values, and hindi_required is True"
+    else:
+      final_var = "One or more keys are missing or have invalid values, and hindi_required is True"
+      petitioner = case['petitioner']
+      respondent = case['respondent']
+      hindi_trans_title
+      hindi_update_data = {'updated_petitioner': updated_petitioner,'updated_respondent': updated_respondent }
+      isSucc, msg = update('case_details',hindi_update_data,where=f"id={case['id']}") 
+      case.update(hindi_update_data)
+      
+  else:
+    cnr = create_unique_id()
+    isS12, temp_court = fetch('static_complex',columns = ['court'], where = f"district = '{url_args['city']}'") 
+    court_list = list(map(lambda x: x['court'], temp_court))  
+    if not check_variable_exists("default_pet"):
+      default_pet = ""
+    if not check_variable_exists("default_res"):
+      default_res = ""
+    petitioner
+    hindi_trans_title
+    r = url_args['city']
+    isS12, ps_temp = fetch('police_station',columns = ['police_station_hi'], where = f"district = '{r}'") 
+    ps_list = list(map(lambda x: x['police_station_hi'], ps_temp)) 
+    fir_no
+    #insert query
+    case_temp = {
+      'cnr': cnr,
+      'representing': "petitioner",
+      'approved': "true",
+      'adv_id': adv_id,
+      'updated_title': up_title,
+      'updated_petitioner': updated_petitioner, 
+      'updated_respondent': updated_respondent
+    }
+    cnr_case_temp = {
+      'petitioner': petitioner,
+      'respondent': respondent,
+      'cnr': cnr,
+      'court_complex': court_complex,
+      'court_name': court_en,
+      'court_name_hi': court_hi,
+      'case_type': case_type,
+      'fir_no': fir_no,
+      'fir_station': ps_name,
+      'fir_year': fir_year,
+      'filing_date': format_date(today(), format='yyyy-MM-dd')
+    }  
+    isSucc5, case_id1 = add('cnr_details_main', cnr_case_temp)
+    isSucc111, case_id = add('case_details', case_temp, return_val='id')
+    case= fetch_case_by_cnr(adv_id, cnr)
+  # check if 'reg_no' key is None or does not exist
+  if case.get('reg_no') is None:
+    # assign an empty string to 'reg_no' key
+    case.update({'reg_no': ''})
+    
+  add_criminal_hindi = True    
+---
+question: |
+  कृपया अपना मुकदमा चुनिये ?
+fields:
+  - मुकदमा: selected_cnr
+    code: |
+      list(adv_cases) + ['Other']
+
+---
+comment: |
+  event : final_screen
+  question: Final Screen
+  subquestion: ${final_var} ${case}
+---
+question: |
+  कृपया मुकदमे के शीर्षक से संबंधित जानकारी दर्ज करे । 
+fields:
+  - वादी का नाम : petitioner
+    default: ${default_pet}
+  - प्रतिवादी का नाम: respondent
+    default: ${default_res}
+  - न्यायालय का नाम : court_en
+    code: |
+      list(court_list)
+---
+question: |
+  कृपया मुकदमे की जानकारी का हिन्दी अनुवाद की जांच करे ।
+subquestion: |
+  अगर त्रुटि है तो कृपया सही करे|. 
+fields:
+  - HINDI petitioner : updated_petitioner
+    default: ${hindi_petitioner}
+  - HINDI respondent : updated_respondent
+    default: ${hindi_respondent}
+  - Translation Checked: hindi_trans_title
+    datatype: yesnoradio
+    default: True
+---
+question: |
+  कृपया प्रथम सूचना रिपोर्ट  से संबन्धित जानकारी दर्ज करे 
+fields:
+	- पुलिस थाना का नाम: ps_name
+    code: |
+        list(ps_list)
+  - एफ०आइ०आर० न०: fir_no
+    datatype: integer
+    minlength: 1
+  - एफ०आइ०आर० वर्ष: fir_year
+    datatype: integer
+    minlength: 4
+    maxlength: 4
+---
+code: |
+  #trans block title
+  if petitioner == "STATE":
+    hindi_petitioner = "सरकार"
+  elif petitioner != "STATE":
+    isCorrect, hindi = trans([petitioner])
+    hindi_petitioner = hindi[petitioner]
+  if respondent == "STATE":
+    hindi_respondent = "सरकार"
+  elif respondent != "STATE":
+    isCorrect, hindi2 = trans([respondent])
+    hindi_respondent = hindi2[respondent]
+---
+code: |
+  #translation function needs to be worked out for court
+  k = f"SELECT * FROM main_static_complex WHERE court = '{court_en}' AND district = '{adv_city}' "
+  isSucc12, ae = raw_query(k,isRead = True)
+  ae = ae[0]
+  court_hi=ae[8]
+  court_complex = ae[4]
+  plc = ae[10]
+  up_title = petitioner + " "+ "V/s" + " "+ respondent
+---
+code: |
+  #trans block Police Station
+  ps_name_hi = ps_name
+---
+comment: |
+  this is temporary working solution while adding new. Needs to be added in main code
+  r = "Kota"
+  isS12, data = fetch('police_station',columns = ['police_station_hi', 'police_station'], where = f"district = '{r}'") 
+  new_data = [{d['police_station_hi']: d['police_station']} for d in data]
+  client_options=new_data
+  for dictionary in new_data:
+    if ps_name in dictionary:
+      ps_en =dictionary[ps_name]   
+      break
+      
+---

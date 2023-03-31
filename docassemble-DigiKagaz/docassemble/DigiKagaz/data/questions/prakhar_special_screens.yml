@@ -1,0 +1,35 @@
+---
+features:
+  hide navbar: true
+---
+mandatory: True
+code: |
+  if not all(key in url_args for key in ['uuid', 'city', 'state', 'advmob', 'enrollno', 'advocate', 'hindiname']):
+    err = "We apologize for the inconvenience, but it seems that we encountered an error. Please try generating the form again in a few moments, as the issue may be resolved shortly.\n\nIf the error persists, please reach out to the DigiKagaz's support team for assistance. They may be able to provide additional guidance or troubleshooting steps to help you generate the form successfully.\n\nThank you for your patience and understanding. We apologize for any frustration or inconvenience this may have caused."
+    error_screen
+  adv_id = url_args['uuid']  
+  ADV_ID = url_args['uuid']  
+  adv_city = url_args['city']   
+  adv_state = url_args['state']   
+  adv_mob = url_args['advmob']   
+  adv_enroll  = url_args['enrollno']   
+  adv_name = url_args['advocate']   
+  adv_hi = url_args['hindiname']    
+  
+  today_date= today()
+---
+event : error_screen
+question: |
+  Error Accessing the Form
+subquestion: ${err}
+buttons:
+  - Exit: exit
+  - Restart: restart
+---
+event : debug_screen
+question: Debug Screen
+subquestion: ${debug}
+buttons:
+  - Exit: exit
+  - Restart: restart
+---
