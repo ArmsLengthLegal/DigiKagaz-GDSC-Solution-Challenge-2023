@@ -5,9 +5,9 @@ modules:
 
 ---
 include:
-  - prakhar_special_screens.yml
-  - prakhar_client_fetch.yml
-  - prakhar_criminal_master.yml  
+  - special_screens.yml
+  - client_fetch.yml
+  - criminal_master.yml  
   - 1_RJ_DIST_CRI_MISC_VAKALATNAMA.yml
 ---
 metadata:
